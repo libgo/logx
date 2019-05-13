@@ -191,14 +191,24 @@ func SetGlobalLevel(l Level) {
 	zerolog.SetGlobalLevel(l)
 }
 
-// SetAttachment add global kv to logger, this is NOT thread safe.
-func SetAttachment(kv map[string]interface{}) {
+// SetAttach add global kv to logger, this is NOT thread safe.
+func SetAttach(kv map[string]interface{}) {
 	log.Logger = log.With().Fields(kv).Logger()
 }
 
-// SetAttachment is helper func for logger impl SetAttachment method.
+// Deprecated: SetAttachment using SetAttach instead
+func SetAttachment(kv map[string]interface{}) {
+	SetAttach(kv)
+}
+
+// SetAttach is helper func for logger impl SetAttach method.
+func (l *Log) SetAttach(kv map[string]interface{}) {
+	SetAttach(kv)
+}
+
+// Deprecated: SetAttachment using SetAttach instead
 func (l *Log) SetAttachment(kv map[string]interface{}) {
-	SetAttachment(kv)
+	SetAttach(kv)
 }
 
 func Debug(v string) {

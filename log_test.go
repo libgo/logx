@@ -25,9 +25,9 @@ func TestBasic(t *testing.T) {
 	Errorf("msg error %s", "format")
 }
 
-func TestSetAttachment(t *testing.T) {
+func TestSetAttach(t *testing.T) {
 	l := Logger()
-	SetAttachment(map[string]interface{}{"global1": "1", "global2": "2"})
+	SetAttach(map[string]interface{}{"global1": "1", "global2": "2"})
 	Debug("hello")
 	l.SetKV("set-attach-only-1", 1)
 	l.SetKV("global1", "override")
