@@ -1,6 +1,7 @@
 package logx
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"testing"
@@ -144,6 +145,14 @@ func TestSample(t *testing.T) {
 func TestWithStack(t *testing.T) {
 	WithStack().Debug("hello")
 	KV("stack", "x").WithStack().Debug("hello")
+}
+
+func TestWithContext(t *testing.T) {
+	lg := Logger()
+
+	ctx := lg.KV("m", 1).WithContext(context.Background())
+
+	Ctx(ctx).Info("v string")
 }
 
 func TestLog2Redis(t *testing.T) {

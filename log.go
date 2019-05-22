@@ -1,6 +1,7 @@
 package logx
 
 import (
+	"context"
 	"io"
 	"os"
 	"runtime"
@@ -150,6 +151,20 @@ func init() {
 func Logger() *Log {
 	l := logger
 	return &l
+}
+
+type ctxKey struct{}
+
+func Ctx(ctx context.Context) Log {
+	if l, ok := ctx.Value(ctxKey{}).(Log); ok {
+		return l
+	}
+
+	return logger
+}
+
+func (l Log) WithContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxKey{}, l)
 }
 
 type Writer interface {
