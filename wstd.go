@@ -45,7 +45,7 @@ func consoleTimeFormatter(i interface{}) string {
 	if i, ok := i.(json.Number); ok {
 		s, err := i.Int64()
 		if err == nil {
-			return time.Unix(s, 0).Format(time.RFC3339)
+			return time.Unix(0, s*1e6).Format(time.RFC3339)
 		}
 	}
 
