@@ -503,6 +503,11 @@ func Close() error {
 	return nil
 }
 
+// Close impl
+func (l Log) Close() error {
+	return Close()
+}
+
 var stacktracePool = sync.Pool{
 	New: func() interface{} {
 		return newProgramCounters(64)
