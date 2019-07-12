@@ -400,7 +400,7 @@ func (l Log) DebugEnabled() bool {
 
 func (l Log) Debug(v string) {
 	l.depth++
-	l.Debugf(v)
+	l.Debugf("%s", v)
 }
 
 func (l Log) Debugf(format string, v ...interface{}) {
@@ -409,7 +409,7 @@ func (l Log) Debugf(format string, v ...interface{}) {
 
 func (l Log) Info(v string) {
 	l.depth++
-	l.Infof(v)
+	l.Infof("%s", v)
 }
 
 func (l Log) Infof(format string, v ...interface{}) {
@@ -418,7 +418,7 @@ func (l Log) Infof(format string, v ...interface{}) {
 
 func (l Log) Warn(v string) {
 	l.depth++
-	l.Warnf(v)
+	l.Warnf("%s", v)
 }
 
 func (l Log) Warnf(format string, v ...interface{}) {

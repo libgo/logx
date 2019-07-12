@@ -15,6 +15,10 @@ func TestMain(m *testing.M) {
 	Close()
 }
 
+func TestFormat(t *testing.T) {
+	Debug("%2F")
+}
+
 func TestBasic(t *testing.T) {
 	Debug("msg debug")
 	Debugf("msg debug %s", "format")
