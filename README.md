@@ -34,7 +34,7 @@ import (
 
 func main() {
 	// global kv, NOT thread safe
-	logx.SetAttachment(map[string]interface{}{
+	logx.SetAttach(map[string]interface{}{
 		"svc":  "test",
 		"mode": "dev",
 	})
