@@ -32,10 +32,6 @@ const (
 
 var logger = zerolog.New(StdWriter(StdConfig{})).With().Timestamp().Logger()
 
-// prefixSize is used internally to trim the user specific path from the
-// front of the returned filenames from the runtime call stack.
-var prefixSize int
-
 func init() {
 	// base config
 	zerolog.MessageFieldName = "msg"
@@ -112,17 +108,6 @@ func init() {
 	}
 
 	SetOutput(w...)
-
-	// stack frame
-	_, file, _, ok := runtime.Caller(0)
-	if file == "?" {
-		return
-	}
-	if ok {
-		size := len(file)
-		suffix := len("github.com/libgo/logx/logx.go")
-		prefixSize = len(file[:size-suffix])
-	}
 }
 
 type Log struct {
@@ -521,9 +506,6 @@ func TakeStacktrace(optionalSkip ...int) string {
 		buff.AppendByte('\n')
 		buff.AppendByte('\t')
 
-		if prefixSize != 0 && len(frame.File) > prefixSize {
-			frame.File = frame.File[prefixSize:]
-		}
 		buff.AppendString(frame.File)
 
 		buff.AppendByte(':')
