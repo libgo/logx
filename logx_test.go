@@ -20,6 +20,11 @@ func TestFormat(t *testing.T) {
 	Debug("%2F")
 }
 
+func TestError(t *testing.T) {
+	err := errors.New("hello, this is error")
+	Error(err)
+}
+
 func TestBasic(t *testing.T) {
 	Debug("debug")
 	Debugf("debug %s", "fmt")

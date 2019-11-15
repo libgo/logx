@@ -39,7 +39,7 @@ func init() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMs
 
 	// No need error field, all in msg
-	zerolog.ErrorFieldName = ""
+	zerolog.ErrorFieldName = "err"
 	zerolog.ErrorStackFieldName = "est"
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 
