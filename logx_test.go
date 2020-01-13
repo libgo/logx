@@ -26,6 +26,8 @@ func TestError(t *testing.T) {
 }
 
 func TestBasic(t *testing.T) {
+	Trace("trace")
+	Tracef("trace %s", "fmt")
 	Debug("debug")
 	Debugf("debug %s", "fmt")
 	Info("info")
@@ -139,7 +141,7 @@ func BenchmarkKV(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			KV("a", 1, "b", 2).Trace("1").
+			KV("a", 1, "b", 2).
 				KV("c", 3).
 				KV("d", 4).
 				KV("x", "y").
@@ -156,7 +158,6 @@ func BenchmarkKVPair(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			KVPair(map[string]interface{}{"a": 1, "b": 2}).
-				Trace("1").
 				KV("c", 3).
 				KV("d", 4).
 				KV("x", "y").

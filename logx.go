@@ -17,11 +17,11 @@ import (
 // zerolog type alias
 type (
 	Level = zerolog.Level
-	Event = zerolog.Event
 )
 
 // Level
 const (
+	TraceLevel = zerolog.TraceLevel
 	DebugLevel = zerolog.DebugLevel
 	InfoLevel  = zerolog.InfoLevel
 	WarnLevel  = zerolog.WarnLevel
@@ -30,7 +30,8 @@ const (
 	Disabled   = zerolog.Disabled
 )
 
-var logger = zerolog.New(StdWriter(StdConfig{})).With().Timestamp().Logger()
+// default to stdout
+var logger = zerolog.New(StdWriter(StdConfig{Level: TraceLevel})).With().Timestamp().Logger()
 
 func init() {
 	// base config
@@ -47,14 +48,18 @@ func init() {
 	envLevel := func(key string) Level {
 		v := os.Getenv(key)
 		switch v {
-		case "info", "Info", "INFO", "INF", "I":
-			return InfoLevel
-		case "warn", "Warn", "WARN", "WRN", "W":
-			return WarnLevel
 		case "error", "Error", "ERROR", "ERR", "E":
 			return ErrorLevel
-		default:
+		case "warn", "Warn", "WARN", "WRN", "W":
+			return WarnLevel
+		case "info", "Info", "INFO", "INF", "I":
+			return InfoLevel
+		case "debug", "Debug", "DEBUG", "DBG", "D":
 			return DebugLevel
+		case "trace", "Trace", "TRACE", "TRC", "T":
+			return TraceLevel
+		default:
+			return TraceLevel
 		}
 	}
 
@@ -110,6 +115,21 @@ func init() {
 	SetOutput(w...)
 }
 
+var ouputList = []func() error{}
+
+// Close resource FILO
+func Close() error {
+	for i := len(ouputList) - 1; i >= 0; i-- {
+		ouputList[i]()
+	}
+	return nil
+}
+
+// Close is helper func for logger impl Close method.
+func (l *Log) Close() error {
+	return Close()
+}
+
 type Log struct {
 	kvpair       []interface{}
 	skip         int
@@ -156,17 +176,22 @@ func SetOutput(w ...Writer) {
 	case 0:
 		return
 	case 1:
-		asyncWaitList = append(asyncWaitList, w[0].Close)
+		ouputList = append(ouputList, w[0].Close)
 		logger = logger.Output(w[0])
 	default:
 		wList := make([]io.Writer, len(w))
 		for i := range w {
 			wList[i] = w[i].(io.Writer)
-			asyncWaitList = append(asyncWaitList, w[i].Close)
+			ouputList = append(ouputList, w[i].Close)
 		}
 
 		logger = logger.Output(zerolog.MultiLevelWriter(wList...))
 	}
+}
+
+// SetGlobalLevel set global log level.
+func SetGlobalLevel(l Level) {
+	zerolog.SetGlobalLevel(l)
 }
 
 var globalCallerEnable = false
@@ -176,17 +201,7 @@ func SetGlobalCaller(b bool) {
 	globalCallerEnable = b
 }
 
-// SetGlobalLevel set global log level.
-func SetGlobalLevel(l Level) {
-	zerolog.SetGlobalLevel(l)
-}
-
 type ctxKey struct{}
-
-// Deprecated, using FromContext instead.
-func Ctx(ctx context.Context) *Log {
-	return FromContext(ctx)
-}
 
 func FromContext(ctx context.Context) *Log {
 	if l, ok := ctx.Value(ctxKey{}).(*Log); ok {
@@ -207,14 +222,32 @@ func (l *Log) Copy() *Log {
 	return &nl
 }
 
-// SetAttach add global kv to logger, this is NOT thread safe.
-func SetAttach(kv map[string]interface{}) {
+// Attach add global kv to logger, this is NOT thread safe.
+func Attach(kv map[string]interface{}) {
 	logger = logger.With().Fields(kv).Logger()
 }
 
-// SetAttach is helper func for logger impl SetAttach method.
+// Attach is helper func for logger impl SetAttach method.
+func (l *Log) Attach(kv map[string]interface{}) {
+	Attach(kv)
+}
+
+// Deprecated, using Attach instead.
+func SetAttach(kv map[string]interface{}) {
+	Attach(kv)
+}
+
+// Deprecated, using Attach instead.
 func (l *Log) SetAttach(kv map[string]interface{}) {
-	SetAttach(kv)
+	Attach(kv)
+}
+
+func TraceEnabled() bool {
+	return logger.Trace().Enabled()
+}
+
+func (l *Log) TraceEnabled() bool {
+	return logger.Trace().Enabled()
 }
 
 func DebugEnabled() bool {
@@ -223,6 +256,14 @@ func DebugEnabled() bool {
 
 func (l *Log) DebugEnabled() bool {
 	return logger.Debug().Enabled()
+}
+
+func Trace(v string) {
+	newLog().levelLog(TraceLevel, v)
+}
+
+func Tracef(format string, v ...interface{}) {
+	newLog().levelLog(TraceLevel, format, v...)
 }
 
 func Debug(v string) {
@@ -289,16 +330,6 @@ func (l *Log) KV(k interface{}, v ...interface{}) *Log {
 	return l
 }
 
-// Trace v should be string
-func Trace(v interface{}) *Log {
-	return KV("tid", v)
-}
-
-// Trace v should be string
-func (l *Log) Trace(v interface{}) *Log {
-	return l.KV("tid", v)
-}
-
 func Skip(n ...int) *Log {
 	return newLog().Skip(n...)
 }
@@ -328,48 +359,56 @@ func (l *Log) Stack() *Log {
 	return l
 }
 
+func (l *Log) Trace(v string) {
+	l.levelLog(TraceLevel, v)
+}
+
+func (l *Log) Tracef(format string, v ...interface{}) {
+	l.levelLog(TraceLevel, format, v...)
+}
+
 func (l *Log) Debug(v string) {
-	l.levelLog(zerolog.DebugLevel, v)
+	l.levelLog(DebugLevel, v)
 }
 
 func (l *Log) Debugf(format string, v ...interface{}) {
-	l.levelLog(zerolog.DebugLevel, format, v...)
+	l.levelLog(DebugLevel, format, v...)
 }
 
 func (l *Log) Info(v string) {
-	l.levelLog(zerolog.InfoLevel, v)
+	l.levelLog(InfoLevel, v)
 }
 
 func (l *Log) Infof(format string, v ...interface{}) {
-	l.levelLog(zerolog.InfoLevel, format, v...)
+	l.levelLog(InfoLevel, format, v...)
 }
 
 func (l *Log) Warn(v string) {
-	l.levelLog(zerolog.WarnLevel, v)
+	l.levelLog(WarnLevel, v)
 }
 
 func (l *Log) Warnf(format string, v ...interface{}) {
-	l.levelLog(zerolog.WarnLevel, format, v...)
+	l.levelLog(WarnLevel, format, v...)
 }
 
 // Error v if error value, it will try print e.stack
 // using special %_- as error stack
 func (l *Log) Error(v interface{}) {
-	l.levelLog(zerolog.ErrorLevel, "%_-", v)
+	l.levelLog(ErrorLevel, "%_-", v)
 }
 
 func (l *Log) Errorf(format string, v ...interface{}) {
-	l.levelLog(zerolog.ErrorLevel, format, v...)
+	l.levelLog(ErrorLevel, format, v...)
 }
 
 // Fatal v if error value, it will try print e.stack
 // using special %_- as error stack
 func (l *Log) Fatal(v interface{}) {
-	l.levelLog(zerolog.FatalLevel, "%_-", v)
+	l.levelLog(FatalLevel, "%_-", v)
 }
 
 func (l *Log) Fatalf(format string, v ...interface{}) {
-	l.levelLog(zerolog.FatalLevel, format, v...)
+	l.levelLog(FatalLevel, format, v...)
 }
 
 func (l *Log) levelLog(lv Level, format string, v ...interface{}) {
@@ -432,21 +471,6 @@ func (l *Log) levelLog(lv Level, format string, v ...interface{}) {
 		Close()
 		os.Exit(1)
 	}
-}
-
-var asyncWaitList = []func() error{}
-
-// Close resource FILO
-func Close() error {
-	for i := len(asyncWaitList) - 1; i >= 0; i-- {
-		asyncWaitList[i]()
-	}
-	return nil
-}
-
-// Close is helper func for logger impl Close method.
-func (l *Log) Close() error {
-	return Close()
 }
 
 var stacktracePool = sync.Pool{
